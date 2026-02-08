@@ -1,0 +1,59 @@
+# Data directories
+data/
+*.csv
+*.zip
+
+# Model artifacts
+models/
+results/
+*.pkl
+*.pickle
+*.h5
+*.pt
+*.pth
+*.joblib
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# MLFlow (from template)
+mlruns/
+mlflow.db
+
+# Temporary files
+*.tmp
+temp/
+tmp/
