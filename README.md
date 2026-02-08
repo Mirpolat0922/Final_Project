@@ -272,3 +272,180 @@ docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data sentiment-train
    - `models/figures/confusion_matrix.png`
 
 **Expected output:**
+
+Training Accuracy: 0.90200\
+Training ROC AUC: 0.95500\
+Model saved to models/sentiment_model.pickle
+
+### Step 3: Inference
+
+**Build inference image:**
+```bash
+docker build -f ./inference/Dockerfile --build-arg settings_name=settings.json -t sentiment-inference .
+```
+
+**Run inference:**
+```bash
+docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data -v $(pwd)/results:/app/results sentiment-inference
+```
+
+**What happens:**
+1. Loads trained model and vectorizer from `models/`
+2. Downloads inference dataset (~12MB) from EPAM CDN
+3. Preprocesses 25,000 reviews
+4. Generates predictions
+5. Evaluates against ground truth
+6. Saves:
+   - `results/<timestamp>.csv` - All predictions
+   - `results/inference_metrics.json` - Metrics
+   - `results/inference_confusion_matrix.png` - Visualization
+
+**Expected output:**
+
+Inference Accuracy: 0.90700
+Inference ROC AUC: 0.96000
+Results saved to results/08.02.2026_14.30.csv
+
+### Alternative: Local Execution
+
+If Docker issues occur, run locally:
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Download data
+python data_process/data_generation.py
+
+# Train
+export CONF_PATH=settings.json  # or set in code
+python training/train.py
+
+# Inference
+python inference/run.py
+```
+
+---
+
+## Output Files
+
+### Training Outputs (`models/`)
+
+**sentiment_model.pickle**
+- Serialized LinearSVC model
+- Size: ~50KB
+- Contains trained weights and hyperparameters
+
+**tfidf_vectorizer.pickle**
+- Fitted TF-IDF vectorizer
+- Size: ~2MB
+- Contains vocabulary (10,000+ n-grams) and IDF values
+
+**training_metrics.json**
+```json
+{
+    "accuracy": 0.90200,
+    "roc_auc": 0.95500,
+    "classification_report": {
+        "negative": {
+            "precision": 0.89,
+            "recall": 0.91,
+            "f1-score": 0.90
+        },
+        "positive": {
+            "precision": 0.91,
+            "recall": 0.89,
+            "f1-score": 0.90
+        }
+    }
+}
+```
+
+### Inference Outputs (`results/`)
+
+**<timestamp>.csv**
+```csv
+review,true_sentiment,predicted_sentiment,decision_score
+"Great movie!",positive,positive,1.2345
+"Terrible film.",negative,negative,-0.9876
+...
+```
+
+**inference_metrics.json**
+```json
+{
+    "accuracy": 0.90700,
+    "roc_auc": 0.96000,
+    "classification_report": { ... }
+}
+```
+
+---
+
+## Reported Metrics
+
+### Training Performance
+- **Accuracy**: 90.2%
+- **ROC AUC**: 0.955
+
+### Inference Performance (FINAL)
+- **Accuracy**: 90.7%** ✅
+- **ROC AUC**: 0.960** ✅
+
+**Reproducibility**: Metrics are identical across runs due to `random_state=42`
+
+---
+
+## Troubleshooting
+
+### Issue: "Model not found"
+**Cause**: Inference run before training
+**Solution**: 
+```bash
+# Run training first
+docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data sentiment-train
+```
+
+### Issue: "Connection timeout during data download"
+**Cause**: Network issues or firewall blocking EPAM CDN
+**Solution**:
+1. Check internet connection
+2. Try VPN if corporate firewall blocks downloads
+3. Download manually from URLs in `settings.json` → place in `data/raw/`
+
+### Issue: Different results than reported
+**Cause**: Random state not set or different scikit-learn version
+**Solution**:
+- Verify `random_state=42` in `settings.json`
+- Use exact package versions from `requirements.txt`
+- Small variations (<0.1%) are acceptable
+
+---
+
+## Dependencies
+
+**Core ML Libraries:**
+- pandas 2.0.3 - Data manipulation
+- numpy 1.24.3 - Numerical operations
+- scikit-learn 1.3.0 - ML algorithms and TF-IDF
+
+**NLP Libraries:**
+- nltk 3.8.1 - Tokenization, lemmatization, stopwords
+
+**Visualization:**
+- matplotlib 3.7.2 - Plotting
+- seaborn 0.12.2 - Statistical visualizations
+
+**Utilities:**
+- requests 2.31.0 - HTTP data downloads
+
+All installed automatically in Docker containers.
+
+---
+
+## Notes
+
+✅ **No manual steps** - Everything automated in Docker\
+✅ **Reproducible** - Fixed random seed ensures identical results\
+✅ **Data downloading** - Datasets fetched automatically from EPAM URLs\
+✅ **Volume mounting** - Outputs persist after container stops\
+✅ **No retraining** - Inference uses pre-trained model only

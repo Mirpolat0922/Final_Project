@@ -16,6 +16,7 @@ import seaborn as sns
 from datetime import datetime
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, roc_auc_score, classification_report, confusion_matrix
 
 # Adds the root directory to system path
@@ -94,32 +95,55 @@ class Training:
 
     def run_training(self, X: pd.Series, y: pd.Series) -> None:
         """Execute the training pipeline."""
+
+        # FIXED: Split into train and validation sets
+        logging.info("\n" + "="*60)
+        logging.info("Splitting Data into Train and Validation Sets")
         logging.info("="*60)
+        X_train, X_val, y_train, y_val = train_test_split(
+            X, y,
+            test_size=conf['train']['test_size'],
+            random_state=conf['general']['random_state'],
+            stratify=y
+        )
+        logging.info(f"Training samples: {len(X_train)}")
+        logging.info(f"Validation samples: {len(X_val)}")
+
+        logging.info("\n" + "="*60)
         logging.info("Creating TF-IDF Features")
         logging.info("="*60)
-        X_tfidf = self.create_features(X)
+        X_train_tfidf, X_val_tfidf = self.create_features(X_train, X_val)
 
         logging.info("\n" + "="*60)
         logging.info("Training Model")
         logging.info("="*60)
-        self.train(X_tfidf, y)
+        self.train(X_train_tfidf, y_train)
 
         logging.info("\n" + "="*60)
-        logging.info("Evaluating Model")
+        logging.info("Evaluating Model on Validation Set")
         logging.info("="*60)
-        self.evaluate(X_tfidf, y)
+        self.evaluate(X_val_tfidf, y_val)
 
         logging.info("\n" + "="*60)
         logging.info("Saving Model Artifacts")
         logging.info("="*60)
         self.save()
 
-    def create_features(self, X: pd.Series):
+    def create_features(self, X_train: pd.Series, X_val: pd.Series = None):
         """Create TF-IDF features."""
         logging.info("Vectorizing text with TF-IDF...")
-        X_tfidf = self.vectorizer.fit_transform(X)
-        logging.info(f"TF-IDF shape: {X_tfidf.shape}")
-        return X_tfidf
+
+        # Fit on training data only
+        X_train_tfidf = self.vectorizer.fit_transform(X_train)
+        logging.info(f"Training TF-IDF shape: {X_train_tfidf.shape}")
+
+        if X_val is not None:
+            # Transform validation data (no fitting!)
+            X_val_tfidf = self.vectorizer.transform(X_val)
+            logging.info(f"Validation TF-IDF shape: {X_val_tfidf.shape}")
+            return X_train_tfidf, X_val_tfidf
+
+        return X_train_tfidf
 
     def train(self, X_train, y_train) -> None:
         """Train the model."""
@@ -129,23 +153,32 @@ class Training:
         end_time = time.time()
         logging.info(f"Training completed in {end_time - start_time:.2f} seconds")
 
-    def evaluate(self, X, y) -> None:
-        """Evaluate the model."""
-        logging.info("Evaluating model on training data...")
-        y_pred = self.model.predict(X)
-        y_proba = self.model.decision_function(X)
+    def evaluate(self, X_val, y_val) -> None:
+        """Evaluate the model on validation set."""
+        logging.info("Evaluating model on validation data...")
+        y_pred = self.model.predict(X_val)
+        y_proba = self.model.decision_function(X_val)
 
-        accuracy = accuracy_score(y, y_pred)
-        roc_auc = roc_auc_score(y, y_proba)
+        accuracy = accuracy_score(y_val, y_pred)
+        roc_auc = roc_auc_score(y_val, y_proba)
 
-        logging.info(f"Training Accuracy: {accuracy:.5f}")
-        logging.info(f"Training ROC AUC: {roc_auc:.5f}")
+        logging.info(f"\n{'='*60}")
+        logging.info(f"VALIDATION METRICS")
+        logging.info(f"{'='*60}")
+        logging.info(f"Validation Accuracy: {accuracy:.5f}")
+        logging.info(f"Validation ROC AUC: {roc_auc:.5f}")
+        logging.info(f"{'='*60}\n")
+
+        # Print classification report
+        logging.info("Classification Report:")
+        logging.info("\n" + classification_report(y_val, y_pred,
+                                                  target_names=['negative', 'positive']))
 
         # Save confusion matrix
-        self.save_confusion_matrix(y, y_pred)
+        self.save_confusion_matrix(y_val, y_pred)
 
         # Save metrics
-        self.save_metrics(accuracy, roc_auc, y, y_pred)
+        self.save_metrics(accuracy, roc_auc, y_val, y_pred)
 
     def save_confusion_matrix(self, y_true, y_pred):
         """Save confusion matrix plot."""
@@ -154,7 +187,7 @@ class Training:
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                     xticklabels=['Negative', 'Positive'],
                     yticklabels=['Negative', 'Positive'])
-        plt.title('Training Confusion Matrix')
+        plt.title('Validation Confusion Matrix')
         plt.ylabel('True Label')
         plt.xlabel('Predicted Label')
         plt.tight_layout()
@@ -170,8 +203,8 @@ class Training:
     def save_metrics(self, accuracy, roc_auc, y_true, y_pred):
         """Save metrics to file."""
         metrics = {
-            'accuracy': float(accuracy),
-            'roc_auc': float(roc_auc),
+            'validation_accuracy': float(accuracy),
+            'validation_roc_auc': float(roc_auc),
             'classification_report': classification_report(
                 y_true, y_pred,
                 target_names=['negative', 'positive'],
@@ -183,6 +216,15 @@ class Training:
         with open(metrics_path, 'w') as f:
             json.dump(metrics, f, indent=4)
         logging.info(f"Metrics saved to {metrics_path}")
+
+        # Also save as text for easy reading
+        metrics_txt_path = os.path.join(MODEL_DIR, 'training_metrics.txt')
+        with open(metrics_txt_path, 'w') as f:
+            f.write(f"Validation Metrics\n")
+            f.write(f"{'='*60}\n\n")
+            f.write(f"Validation Accuracy: {accuracy:.5f}\n")
+            f.write(f"Validation ROC AUC: {roc_auc:.5f}\n")
+        logging.info(f"Metrics text saved to {metrics_txt_path}")
 
     def save(self) -> None:
         """Save model and vectorizer."""
@@ -221,7 +263,7 @@ def main():
     # Load and preprocess data
     X, y = data_proc.prepare_data()
 
-    # Train model
+    # Train model (includes split, train, validate)
     trainer.run_training(X, y)
 
     logging.info("\n" + "="*60)
