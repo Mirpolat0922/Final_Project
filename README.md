@@ -1,6 +1,6 @@
 # Sentiment Analysis for Movie Reviews
 
-A production-ready machine learning project for classifying movie reviews as positive or negative using Natural Language Processing and Support Vector Machines.
+A project for classifying movie reviews as positive or negative using Natural Language Processing and Support Vector Machines.
 
 ---
 
@@ -15,7 +15,7 @@ A production-ready machine learning project for classifying movie reviews as pos
 ## DS Part - Data Science Analysis
 
 ### Overview
-This project implements a sentiment classification system for movie reviews using classical machine learning techniques. The solution achieves **90.7% accuracy** on the inference dataset through careful feature engineering and model selection.
+The project implements a sentiment classification system for movie reviews using classical machine learning techniques. The solution achieves **90.52% accuracy** on the inference dataset through careful feature engineering and model selection.
 
 ### Exploratory Data Analysis
 
@@ -48,7 +48,7 @@ The preprocessing pipeline transforms raw text into numerical features suitable 
 **Stemming approach:**
 - Reduces words to stems (e.g., "running" → "runn", "remembered" → "rememb")
 - Fast but produces non-dictionary forms
-- Lower model performance
+- A bit lower model performance
 
 **Lemmatization approach** (chosen):
 - Reduces words to dictionary base forms (e.g., "running" → "run", "better" → "good")
@@ -64,7 +64,7 @@ The preprocessing pipeline transforms raw text into numerical features suitable 
 - **Parameters**:
   - `ngram_range=(1,3)`: Captures single words, bigrams, and trigrams ("not good" as unit)
   - `max_df=0.9`: Ignores words appearing in >90% of documents (too common)
-  - `min_df=5`: Ignores words appearing in <5 documents (likely typos)
+  - `min_df=5`: Ignores words appearing in <5 documents (likely typos or very rare)
 - **Advantage**: Identifies important words while filtering noise
 
 **Count Vectorizer (baseline):**
@@ -75,14 +75,14 @@ The preprocessing pipeline transforms raw text into numerical features suitable 
 
 ### Model Selection
 
-Evaluated multiple algorithms to find optimal classifier:
+Evaluated multiple algorithms to find optimal classifier. Here are the models trained on the best preprocessed data:
 
-| Model | Preprocessing | Accuracy | ROC AUC | Training Time | Notes |
-|-------|--------------|----------|---------|---------------|-------|
-| **LinearSVC** | Lemma + TF-IDF | **90.7%** | **0.96** | ~2 min | Best overall |
-| Logistic Regression | Lemma + TF-IDF | 89.8% | 0.95 | ~1.5 min | Fast baseline |
-| Naive Bayes | Lemma + TF-IDF | 88.5% | 0.94 | <1 min | Fastest |
-| Random Forest | Lemma + TF-IDF | 84.3% | 0.90 | ~10 min | Underperforms |
+| Model | Preprocessing | Accuracy | Notes |
+|-------|--------------|------------|---------|
+| **LinearSVC** | Lemma + TF-IDF | **90.16%**| Best overall |
+| Logistic Regression | Lemma + TF-IDF | 89.51% | Fast baseline |
+| Naive Bayes | Lemma + TF-IDF | 88.45%   | Fastest |
+| Random Forest | Lemma + TF-IDF | 84.79% | Underperforms |
 
 #### Why Linear Models Excel
 
@@ -99,37 +99,29 @@ Linear models (SVC, Logistic Regression) are designed for exactly this:
 #### Why Tree Models Struggle
 
 Random Forest and other tree-based models:
-- Split on thresholds (e.g., "Is feature > 0.12?")
+- Split on thresholds (e.g., "Is feature > 0.37?")
 - Ineffective on sparse data (most features are zero)
 - Require many trees to capture linear relationships
 - **Result**: 6% lower accuracy than LinearSVC
 
 ### Final Model: LinearSVC
 
-**Configuration:**
-```python
-LinearSVC(
-    max_iter=3000,
-    random_state=42
-)
-```
-
 **Performance:**
-- **Training Accuracy**: 90.2%
-- **Inference Accuracy**: 90.7%
-- **ROC AUC**: 0.96
+- **Training Accuracy**: 90.15%
+- **Inference Accuracy**: 90.52%
+- **ROC AUC**: 96.56%
 - **No overfitting**: Inference outperforms training (model generalizes well)
 
 ### Business Value & Applications
 
 #### 1. Automated Customer Feedback Analysis
 **Problem**: Companies receive thousands of reviews daily; manual analysis is impossible
-**Solution**: Classify reviews automatically by sentiment
+**Solution**: Classify reviews automatically by sentiment\
 **Impact**:
 - Process 10,000+ reviews per hour (vs. 50 manually)
 - **Cost savings**: $100K+/year in manual labor
 - Real-time sentiment tracking for product launches
-- Identify negative feedback within minutes for rapid response
+- Identify negative feedbacks within minutes for rapid response
 
 #### 2. Product Launch Assessment
 **Use Case**: Movie studio releases new film
@@ -153,7 +145,6 @@ LinearSVC(
 - Automatically flag high-confidence negative reviews (score < -0.5)
 - Prioritize customer service responses
 - Route to appropriate team (refunds, apologies, explanations)
-**Efficiency**: 70% reduction in response time for critical issues
 
 ### Domain Transferability
 
@@ -163,32 +154,34 @@ LinearSVC(
 - Restaurant reviews (Yelp, Google)
 - Hotel reviews (TripAdvisor, Booking.com)
 - App reviews (Google Play, App Store)
+- And other domains
 
 **Caveat**: Domain-specific words may shift meaning
 - "sick" in movie reviews = negative
-- "sick" in youth slang = positive
-
-**Recommendation**: Fine-tune model on target domain for optimal results
-
+- "sick" in youth slang = positive\
+But the model still works well in other domains too.
 ---
 
 ## MLE Part - ML Engineering
 
 ### Project Structure
-sentiment-analysis/
+```bash
+Final_Project/
 ├── data/                          # Git-ignored: Downloaded datasets
 │   └── raw/
-│       ├── train.csv             # Training data (auto-downloaded)
-│       └── inference.csv         # Inference data (auto-downloaded)
+│       ├── final_project_train_dataset/
+│       │    └── train.csv             # Training data (auto-downloaded)
+│       └── final_project_inference_dataset/
+│            └── inference.csv         # Inference data (auto-downloaded)
 ├── data_process/
-│   ├── init.py
+│   ├── __init__.py
 │   └── data_generation.py        # Data downloading script
 ├── training/
-│   ├── init.py
+│   ├── __init__.py
 │   ├── train.py                  # Training pipeline
 │   └── Dockerfile                # Training container
 ├── inference/
-│   ├── init.py
+│   ├── __init__.py
 │   ├── run.py                    # Inference pipeline
 │   └── Dockerfile                # Inference container
 ├── models/                        # Git-ignored: Trained artifacts
@@ -202,11 +195,14 @@ sentiment-analysis/
 │   ├── inference_metrics.json    # Inference evaluation
 │   └── figures/
 │       └── inference_confusion_matrix.png
+│   Notebooks/
+│    └── FinalProject.ipynb
 ├── utils.py                       # Shared utility functions
 ├── settings.json                  # Configuration parameters
 ├── requirements.txt               # Python dependencies
-└── README.md                      # This file
-
+├── README.md                      
+└──  __init__.py
+```
 ### Configuration (`settings.json`)
 
 All hyperparameters and paths are centralized in `settings.json`:
@@ -244,8 +240,8 @@ All hyperparameters and paths are centralized in `settings.json`:
 
 ### Step 1: Clone Repository
 ```bash
-git clone <your-repo-url>
-cd sentiment-analysis
+git clone https://github.com/Mirpolat0922/Final_Project.git
+cd Final_Project
 ```
 
 ### Step 2: Training
@@ -261,9 +257,9 @@ docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data sentiment-train
 ```
 
 **What happens:**
-1. Downloads training dataset (~12MB) from EPAM CDN
-2. Preprocesses 25,000 reviews (lemmatization, TF-IDF)
-3. Trains LinearSVC model (~2 minutes)
+1. Downloads training and inference datasets
+2. Preprocesses 40,000 reviews (lemmatization, TF-IDF)
+3. Trains LinearSVC model
 4. Evaluates on training data
 5. Saves:
    - `models/sentiment_model.pickle`
@@ -273,8 +269,8 @@ docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data sentiment-train
 
 **Expected output:**
 
-Training Accuracy: 0.90200\
-Training ROC AUC: 0.95500\
+Validation Accuracy: 0.90158\
+Validation ROC AUC: 0.96346\
 Model saved to models/sentiment_model.pickle
 
 ### Step 3: Inference
@@ -291,8 +287,8 @@ docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data -v $(pwd)/resul
 
 **What happens:**
 1. Loads trained model and vectorizer from `models/`
-2. Downloads inference dataset (~12MB) from EPAM CDN
-3. Preprocesses 25,000 reviews
+2. Gets inference dataset from loaded data
+3. Preprocesses 10,000 reviews
 4. Generates predictions
 5. Evaluates against ground truth
 6. Saves:
@@ -302,8 +298,8 @@ docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data -v $(pwd)/resul
 
 **Expected output:**
 
-Inference Accuracy: 0.90700
-Inference ROC AUC: 0.96000
+Inference Accuracy: 0.90520
+Inference ROC AUC: 0.96562
 Results saved to results/08.02.2026_14.30.csv
 
 ### Alternative: Local Execution
@@ -332,31 +328,18 @@ python inference/run.py
 
 **sentiment_model.pickle**
 - Serialized LinearSVC model
-- Size: ~50KB
 - Contains trained weights and hyperparameters
 
 **tfidf_vectorizer.pickle**
 - Fitted TF-IDF vectorizer
-- Size: ~2MB
-- Contains vocabulary (10,000+ n-grams) and IDF values
+- Contains vocabulary and IDF values
 
 **training_metrics.json**
 ```json
 {
-    "accuracy": 0.90200,
-    "roc_auc": 0.95500,
-    "classification_report": {
-        "negative": {
-            "precision": 0.89,
-            "recall": 0.91,
-            "f1-score": 0.90
-        },
-        "positive": {
-            "precision": 0.91,
-            "recall": 0.89,
-            "f1-score": 0.90
-        }
-    }
+    "validation_accuracy": 0.9015833333333333,
+    "validation_roc_auc": 0.9634616111111111,
+    "classification_report": {...}
 }
 ```
 
@@ -373,8 +356,8 @@ review,true_sentiment,predicted_sentiment,decision_score
 **inference_metrics.json**
 ```json
 {
-    "accuracy": 0.90700,
-    "roc_auc": 0.96000,
+    "accuracy": 0.9052,
+    "roc_auc": 0.9656176800000001,
     "classification_report": { ... }
 }
 ```
@@ -384,14 +367,12 @@ review,true_sentiment,predicted_sentiment,decision_score
 ## Reported Metrics
 
 ### Training Performance
-- **Accuracy**: 90.2%
-- **ROC AUC**: 0.955
+- **Accuracy**: 90.15%
+- **Accuracy(in notebook)**: 90.16%
 
 ### Inference Performance (FINAL)
-- **Accuracy**: 90.7%** ✅
-- **ROC AUC**: 0.960** ✅
-
-**Reproducibility**: Metrics are identical across runs due to `random_state=42`
+- **Accuracy**: 90.52%
+- **Accuracy(in notebook)**: 90.87%  ---> 0.35% difference because in notebook, I retrained the model on the whole training data
 
 ---
 
@@ -412,40 +393,4 @@ docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data sentiment-train
 2. Try VPN if corporate firewall blocks downloads
 3. Download manually from URLs in `settings.json` → place in `data/raw/`
 
-### Issue: Different results than reported
-**Cause**: Random state not set or different scikit-learn version
-**Solution**:
-- Verify `random_state=42` in `settings.json`
-- Use exact package versions from `requirements.txt`
-- Small variations (<0.1%) are acceptable
-
 ---
-
-## Dependencies
-
-**Core ML Libraries:**
-- pandas 2.0.3 - Data manipulation
-- numpy 1.24.3 - Numerical operations
-- scikit-learn 1.3.0 - ML algorithms and TF-IDF
-
-**NLP Libraries:**
-- nltk 3.8.1 - Tokenization, lemmatization, stopwords
-
-**Visualization:**
-- matplotlib 3.7.2 - Plotting
-- seaborn 0.12.2 - Statistical visualizations
-
-**Utilities:**
-- requests 2.31.0 - HTTP data downloads
-
-All installed automatically in Docker containers.
-
----
-
-## Notes
-
-✅ **No manual steps** - Everything automated in Docker\
-✅ **Reproducible** - Fixed random seed ensures identical results\
-✅ **Data downloading** - Datasets fetched automatically from EPAM URLs\
-✅ **Volume mounting** - Outputs persist after container stops\
-✅ **No retraining** - Inference uses pre-trained model only
