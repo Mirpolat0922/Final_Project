@@ -1,8 +1,3 @@
-"""
-Inference Script
-Loads trained model and generates predictions on inference data.
-"""
-
 import argparse
 import json
 import logging
@@ -73,6 +68,7 @@ def get_inference_data(path: str) -> pd.DataFrame:
         return df
     except Exception as e:
         logging.error(f"Error loading inference data: {e}")
+        logging.error("Please run training first to download data!")
         sys.exit(1)
 
 

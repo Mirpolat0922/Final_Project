@@ -41,24 +41,6 @@ def download_nltk_resources():
 
 
 def preprocess_text(text, keep_negations):
-    """
-    Preprocess a single text string.
-
-    Steps:
-    1. Convert to lowercase
-    2. Remove punctuation (except apostrophes)
-    3. Tokenize
-    4. Remove stopwords (keeping negations)
-    5. Lemmatize
-    6. Join tokens back to string
-
-    Args:
-        text (str): Input text
-        keep_negations (list): List of negation words to keep
-
-    Returns:
-        str: Preprocessed text
-    """
     # 1. Lowercase
     text = text.lower()
 
