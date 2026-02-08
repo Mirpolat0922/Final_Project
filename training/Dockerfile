@@ -27,8 +27,4 @@ COPY ${CONF_PATH} /app/
 RUN mkdir -p data/raw models/figures
 
 # Download data and train model
-RUN python3 data_process/data_generation.py && \
-    python3 training/train.py
-
-# Default command
-CMD ["python3", "training/train.py"]
+CMD python3 data_process/data_generation.py && python3 training/train.py
