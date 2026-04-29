@@ -392,16 +392,3 @@ docker run -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data sentiment-train
 1. Check internet connection
 2. Try VPN if corporate firewall blocks downloads
 3. Download manually from URLs in `settings.json` → place in `data/raw/`
-
----
-## Experience share
-
-In the last module homework, I wrote dockerfiles and train scripts expecting that data is loaded first manually(forgot). That is why just running the containers did not work correctly.\
-For that reason, now I am running both data loading and training scripts inside the DockerFile. And then inference container uses the trained model for inference data. So every action is happening inside the Docker.
-
-Since the instructions of the project were quite specific and also in the last homework mentor said that the loggings and structures were a bit messy, I used LLM more for the structure of the code and visuals.
-
-## Possible improvements
-
-- Used lemmatization technique in preprocessing but did not perform POS tagging. Probably POS tagging would help a little for reducing the words to their correct form.
-- Did not train the model on the whole training data. Probably it would have increased the accuracy a little bit about ~0.4%.
